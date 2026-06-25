@@ -1,4 +1,4 @@
-# OmniLibrary - Sistema de Gestão de Biblioteca
+# Omni-Library - Sistema de Gestão de Biblioteca
 
 Este projeto consiste no desenvolvimento do back-end de uma API REST para modernizar o controle de acervos físicos e digitais de uma biblioteca. O sistema visa resolver problemas clássicos como o sumiço de obras, a falta de rotação adequada de best-sellers e a reeducação do leitor por meio de regras rigorosas de devolução, reservas e controle de multas.
 
