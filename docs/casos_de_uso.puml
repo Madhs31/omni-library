@@ -1,0 +1,27 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Leitor" as leitor
+actor "Bibliotecário" as bibliotecario
+
+package "CLI - Gestão de Biblioteca" {
+  usecase "Executar Comando de Pesquisa" as UC1
+  usecase "Executar Comando de Reserva" as UC2
+  usecase "Consultar Status e Multas" as UC3
+  
+  usecase "Cadastrar Nova Obra" as UC4
+  usecase "Registrar Empréstimo" as UC5
+  usecase "Registrar Devolução (Calcula Multa/Fila)" as UC6
+}
+
+leitor --> UC1
+leitor --> UC2
+leitor --> UC3
+
+bibliotecario --> UC1
+bibliotecario --> UC3
+bibliotecario --> UC4
+bibliotecario --> UC5
+bibliotecario --> UC6
+@enduml
