@@ -1,0 +1,43 @@
+@startuml
+class Usuario {
+  +id: UUID
+  +nome: String
+  +matricula: String
+  +is_bibliotecario: Boolean
+}
+
+class Obra {
+  +id: UUID
+  +titulo: String
+  +tipo_acervo: Enum
+  +qtd_disponivel: Integer
+  +eh_bestseller: Boolean
+}
+
+class Emprestimo {
+  +id: UUID
+  +data_emprestimo: Date
+  +data_vencimento: Date
+  +data_devolucao: Date
+  +status: Enum
+}
+
+class Reserva {
+  +id: UUID
+  +data_solicitacao: DateTime
+  +posicao_fila: Integer
+}
+
+class Multa {
+  +id: UUID
+  +dias_atraso: Integer
+  +valor_total: Decimal
+  +paga: Boolean
+}
+
+Usuario "1" -- "0..*" Emprestimo : realiza via comando >
+Usuario "1" -- "0..*" Reserva : entra na fila >
+Obra "1" -- "0..*" Emprestimo : vinculada a >
+Obra "1" -- "0..*" Reserva : gerencia prioridade >
+Emprestimo "1" -- "0..1" Multa : calcula atraso >
+@enduml
