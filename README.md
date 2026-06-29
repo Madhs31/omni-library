@@ -1,117 +1,125 @@
 # 📚 OmniLibrary — Sistema de Gestão de Biblioteca
 
-> API REST desenvolvida em **Python + FastAPI** para modernizar o controle de acervos físicos e digitais de uma biblioteca, com reservas antecipadas, fila de prioridade, cálculo automático de multas e alertas inteligentes de vencimento.
+API REST desenvolvida em **Python + FastAPI** para modernizar o controle de acervos físicos e digitais de uma biblioteca, com reservas antecipadas, fila de prioridade, cálculo automático de multas e alertas de vencimento.
 
 ---
 
 ## 👥 Integrantes
 
-- **Angelina Borroni**
-- **Maria Fernanda Diniz**
+- Angelina Borroni
+- Maria Fernanda Diniz
 
 ---
 
 ## 🚀 Funcionalidades e Regras de Negócio
 
-A API implementa os seguintes requisitos levantados na elicitação do **Grupo 5 — Gestão de Biblioteca**:
-
 | Requisito | Descrição |
-|-----------|-----------|
+|------------|-----------|
 | **RF01 — Reserva Antecipada** | Usuários podem reservar obras antes de elas ficarem disponíveis, garantindo posição na fila. |
-| **RF02 — Fila de Prioridade** | Na devolução de um exemplar, o próximo da fila é automaticamente notificado. |
+| **RF02 — Fila de Prioridade** | Na devolução de um exemplar, o próximo usuário da fila é identificado automaticamente. |
 | **RF03 — Multas Automáticas** | Cálculo automático de **R$ 2,50 por dia de atraso** na devolução. |
-| **RF04 — Alertas de Vencimento** | Notificações inteligentes para empréstimos vencidos ou próximos do vencimento. |
-| **US03 — Bloqueio por Multa** | Usuários com multas pendentes são bloqueados de realizar novos empréstimos ou reservas. |
+| **RF04 — Alertas de Vencimento** | Alertas para empréstimos vencidos ou próximos do vencimento. |
+| **RF05 — Gestão do Acervo** | Cadastro, listagem, busca e remoção de obras do acervo. |
+| **US03 — Bloqueio por Multa** | Usuários com multas pendentes não podem realizar novos empréstimos ou reservas. |
 
 ---
 
-## 📐 Arquitetura do Sistema e Design Patterns
+## 🧱 Tecnologias Utilizadas
 
-O projeto foi construído com **Python** e **FastAPI**, seguindo o padrão de **Arquitetura em Camadas Limpas**, garantindo testabilidade, modularidade e facilidade de manutenção.
+- **Linguagem:** Python
+- **Framework REST:** FastAPI
+- **Validação de dados:** Pydantic
+- **Banco de dados:** SQLite
+- **ORM:** SQLAlchemy
+- **Design Pattern:** Repository Pattern
+- **Testes:** Pytest
+
+---
+
+# 📐 Arquitetura do Sistema
+
+O projeto segue uma arquitetura em camadas, separando responsabilidades entre rotas, regras de negócio, persistência e modelos de dados.
+
+```txt
+Cliente HTTP
+    │
+    ▼
+Controllers
+    │
+    ▼
+Services
+    │
+    ▼
+Repositories
+    │
+    ▼
+SQLite + SQLAlchemy
+```
 
 ### Camadas da aplicação
 
-```
-Cliente HTTP (Swagger UI / curl / app)
-       |
-  [ Controller ]     livro_controller.py
-  Rotas HTTP — valida entrada, retorna response
-       | Depends()
-  [ Service ]        livro_service.py
-  Regras de negócio — multas, filas, alertas, bloqueios
-       |
-  [ Repository ]     livro_repository.py
-  Acesso a dados — CRUD e consultas por entidade
-       |
-  [ Database ]       database.py
-  Banco em memória — dicionários Python + IDs sequenciais
-       |
-  [ Model ]          livro_model.py
-  Schemas Pydantic v2 — validação de tipos + Enums
-```
-
-### Design Patterns implementados
-
-**1. Repository Pattern** *(padrão principal)*
-
-Uma classe abstrata `BaseRepository` define o contrato (interface); cinco repositórios concretos implementam o acesso a dados para cada entidade. Isso isola completamente a lógica de negócio do banco de dados — para trocar o banco em memória por PostgreSQL, basta criar uma nova implementação concreta sem alterar nenhum serviço.
-
-**2. Dependency Injection** *(via FastAPI `Depends()`)*
-
-Cada serviço recebe seus repositórios por injeção de dependência, garantindo instâncias frescas por request e facilitando a substituição por mocks nos testes.
-
-**3. Layered Architecture**
-
-Cada camada só conhece a imediatamente abaixo dela. O Controller nunca acessa o banco diretamente; o Repository nunca contém regras de negócio.
+- **Controllers:** definem as rotas HTTP da API.
+- **Services:** concentram as regras de negócio, como cálculo de multa, validação de reservas e bloqueio por multa.
+- **Repositories:** fazem o acesso ao banco de dados usando SQLAlchemy.
+- **Models:** armazenam os schemas Pydantic e os modelos ORM.
+- **Database:** configura a conexão com o SQLite.
 
 ---
 
-## 🗂️ Diagramas UML
+# 🧩 Design Patterns
 
-Os diagramas estão na pasta `docs/` em formato PlantUML:
+## Repository Pattern
 
-| Arquivo | Tipo | Descrição |
-|---------|------|-----------|
-| `docs/casos_de_uso.puml` | Casos de Uso | Atores (Leitor e Bibliotecário) e suas interações com o sistema |
-| `docs/classes.puml` | Diagrama de Classes | Entidades do domínio (Usuario, Obra, Emprestimo, Reserva, Multa) e relacionamentos |
+O projeto utiliza o Repository Pattern para separar a lógica de negócio da lógica de acesso ao banco de dados. Dessa forma, os serviços não acessam diretamente o SQLite, mas sim os repositórios.
 
-Para visualizar, importe os arquivos em [https://www.plantuml.com/plantuml](https://www.plantuml.com/plantuml) ou use a extensão PlantUML no VS Code.
+## Dependency Injection
+
+O FastAPI utiliza `Depends()` para injetar dependências, como a sessão do banco e os serviços usados pelas rotas.
+
+## Layered Architecture
+
+A aplicação é dividida em camadas, facilitando manutenção, testes e evolução do projeto.
 
 ---
 
-## 📂 Estrutura de Pastas
+# 🗂️ Estrutura de Pastas
 
-```
+```txt
 OmniLibrary/
 │
 ├── app/
 │   ├── __init__.py
-│   ├── main.py                 # Ponto de entrada e configuração da API FastAPI
-│   ├── database.py             # Banco de dados em memória
+│   ├── main.py                 # Ponto de entrada da API FastAPI
+│   ├── database.py             # Reexporta configurações do banco
 │   │
-│   ├── controllers/            # Camada de Rotas / Endpoints HTTP
+│   ├── db/
 │   │   ├── __init__.py
-│   │   └── livro_controller.py
+│   │   └── database.py         # Conexão SQLite, SessionLocal, Base e init_db
 │   │
-│   ├── services/               # Camada de Regras de Negócio
+│   ├── controllers/
 │   │   ├── __init__.py
-│   │   └── livro_service.py
+│   │   └── livro_controller.py # Rotas da API
 │   │
-│   ├── repositories/           # Camada de Persistência / Acesso a Dados
+│   ├── services/
 │   │   ├── __init__.py
-│   │   └── livro_repository.py
+│   │   └── livro_service.py    # Regras de negócio
 │   │
-│   └── models/                 # Camada de Entidades e Schemas Pydantic
+│   ├── repositories/
+│   │   ├── __init__.py
+│   │   └── livro_repository.py # Acesso ao banco de dados
+│   │
+│   └── models/
 │       ├── __init__.py
-│       └── livro_model.py
+│       ├── livro_model.py      # Schemas Pydantic
+│       └── orm_models.py       # Modelos SQLAlchemy
 │
-├── tests/                      # Testes automatizados com Pytest
-│   ├── __init__.py
-│   └── test_livros.py
-│
-├── docs/                       # Diagramas UML em PlantUML
+├── docs/
 │   ├── casos_de_uso.puml
 │   └── classes.puml
+│
+├── tests/
+│   ├── __init__.py
+│   └── test_livros.py
 │
 ├── .gitignore
 ├── README.md
@@ -120,12 +128,79 @@ OmniLibrary/
 
 ---
 
-## 🛠️ Instruções de Setup e Execução Local
+# 🗃️ Banco de Dados
 
-### Pré-requisitos
+O projeto utiliza **SQLite** no desenvolvimento local. O banco é criado automaticamente ao iniciar a aplicação.
 
-- **Python 3.10** ou superior
-- **Git**
+### Arquivo gerado localmente
+
+```text
+omnilibrary.db
+```
+
+Esse arquivo não deve ser enviado para o GitHub, por isso deve estar listado no `.gitignore`.
+
+### Tabelas principais
+
+#### usuarios
+
+```text
+id
+nome
+matricula
+is_bibliotecario
+```
+
+#### obras
+
+```text
+id
+titulo
+tipo_acervo
+quantidade_disponivel
+eh_bestseller
+```
+
+#### emprestimos
+
+```text
+id
+usuario_id
+obra_id
+data_emprestimo
+data_vencimento
+data_devolucao
+status
+```
+
+#### reservas
+
+```text
+id
+usuario_id
+obra_id
+data_solicitacao
+posicao_fila
+```
+
+#### multas
+
+```text
+id
+emprestimo_id
+dias_atraso
+valor_total
+paga
+```
+
+---
+
+# 🛠️ Como Executar o Projeto
+
+## Pré-requisitos
+
+- Python 3.10 ou superior
+- Git
 
 ### 1. Clonar o repositório
 
@@ -136,13 +211,15 @@ cd omni-library
 
 ### 2. Criar e ativar o ambiente virtual
 
-**Windows (PowerShell):**
+**Windows**
+
 ```bash
 python -m venv venv
 .\venv\Scripts\activate
 ```
 
-**Linux / macOS:**
+**Linux/macOS**
+
 ```bash
 python -m venv venv
 source venv/bin/activate
@@ -160,90 +237,93 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-A API estará disponível em: `http://127.0.0.1:8000`
+A API ficará disponível em:
 
----
-
-## 📖 Guia de Rotas da API
-
-A documentação interativa completa está disponível após subir o servidor:
-
-- **Swagger UI:** `http://127.0.0.1:8000/docs`
-- **ReDoc:** `http://127.0.0.1:8000/redoc`
-
-### Endpoints disponíveis
-
-#### 👤 Usuários — `/usuarios`
-
-| Método | Rota | Status | Descrição |
-|--------|------|--------|-----------|
-| `POST` | `/usuarios` | 201 / 400 | Cria novo usuário. Erro 400 se matrícula já existe. |
-| `GET` | `/usuarios` | 200 | Lista todos os usuários. |
-| `GET` | `/usuarios/{id}` | 200 / 404 | Busca usuário por ID. |
-| `DELETE` | `/usuarios/{id}` | 204 / 404 | Remove usuário. |
-| `GET` | `/usuarios/{id}/alertas` | 200 / 404 | **RF04:** Retorna alertas de vencimento do usuário. |
-
-#### 📕 Obras — `/obras`
-
-| Método | Rota | Status | Descrição |
-|--------|------|--------|-----------|
-| `POST` | `/obras` | 201 | Cadastra nova obra no acervo. |
-| `GET` | `/obras` | 200 | Lista todas as obras. |
-| `GET` | `/obras/disponiveis` | 200 | Lista obras com exemplares disponíveis. |
-| `GET` | `/obras/bestsellers` | 200 | Lista obras marcadas como best-seller. |
-| `GET` | `/obras/{id}` | 200 / 404 | Busca obra por ID. |
-| `DELETE` | `/obras/{id}` | 204 / 404 | Remove obra do acervo. |
-
-#### 🔄 Empréstimos — `/emprestimos`
-
-| Método | Rota | Status | Descrição |
-|--------|------|--------|-----------|
-| `POST` | `/emprestimos` | 201 / 400 | **RF01 + US03:** Realiza empréstimo. Bloqueia se houver multa pendente ou sem estoque. |
-| `POST` | `/emprestimos/{id}/devolucao` | 200 / 400 | **RF02 + RF03:** Registra devolução, calcula multa automática e avança fila. |
-| `GET` | `/emprestimos/usuario/{id}` | 200 | Lista todos os empréstimos de um usuário. |
-| `GET` | `/emprestimos/{id}` | 200 / 404 | Busca empréstimo por ID. |
-
-#### 📋 Reservas — `/reservas`
-
-| Método | Rota | Status | Descrição |
-|--------|------|--------|-----------|
-| `POST` | `/reservas` | 201 / 400 | **RF01 + RF02:** Cria reserva e posiciona usuário na fila de prioridade. |
-| `GET` | `/reservas/fila/{obra_id}` | 200 / 404 | **RF02:** Visualiza fila de prioridade de uma obra. |
-| `DELETE` | `/reservas/{id}/usuario/{uid}` | 204 / 400 | Cancela reserva (valida que pertence ao usuário). |
-
-#### 💰 Multas — `/multas`
-
-| Método | Rota | Status | Descrição |
-|--------|------|--------|-----------|
-| `GET` | `/multas` | 200 | Lista todas as multas do sistema. |
-| `GET` | `/multas/usuario/{id}` | 200 | Lista multas de um usuário (pagas e pendentes). |
-| `PATCH` | `/multas/{id}/pagar` | 200 / 400 | **RF03:** Registra pagamento de uma multa. |
-
----
-
-## 🧪 Testes Automatizados
-
-Os testes foram desenvolvidos com **Pytest**, usando banco de dados isolado por teste (fixture) para garantir independência entre os casos.
-
-### Executar os testes
-
-```bash
-pytest           # rodar todos os testes
-pytest -v        # modo verboso (nome de cada teste)
+```text
+http://127.0.0.1:8000
 ```
 
-### Cobertura da suíte
+---
 
-| Classe de teste | O que cobre |
-|----------------|-------------|
-| `TestUsuarioRepository` | CRUD, busca por matrícula, IDs inexistentes. |
-| `TestObraRepository` | Criação, decremento/incremento de estoque, filtros. |
-| `TestEmprestimoRepository` | Criação, filtragem por usuário, listagem de ativos. |
-| `TestReservaRepository` | Fila de reservas, posicionamento, duplicatas. |
-| `TestMultaRepository` | Criação de multas, listagem de pendentes por usuário. |
-| `TestUsuarioService` | Matrícula duplicada, busca de usuário inexistente. |
-| `TestObraService` | Cadastro, busca e remoção de obras. |
-| `TestEmprestimoService` | Empréstimo normal, bloqueio **US03**, cálculo **RF03**, devolução dupla. |
-| `TestReservaService` | Reserva **RF01**, fila **RF02**, bloqueio por multa, duplicata. |
-| `TestMultaService` | Pagamento de multa, erro em multa já paga. |
-| `TestAlertaService` | Alertas vencido / vence_hoje / vence_em_breve / nenhum — **RF04**. |
+# 📖 Documentação da API
+
+Após iniciar o servidor, acesse:
+
+- **Swagger UI:** http://127.0.0.1:8000/docs
+- **ReDoc:** http://127.0.0.1:8000/redoc
+
+---
+
+# 🔗 Endpoints Disponíveis
+
+## Usuários — `/usuarios`
+
+| Método | Rota | Descrição |
+|---------|------|-----------|
+| POST | `/usuarios` | Cria um usuário. |
+| GET | `/usuarios` | Lista todos os usuários. |
+| GET | `/usuarios/{usuario_id}` | Busca usuário por ID. |
+| DELETE | `/usuarios/{usuario_id}` | Remove usuário. |
+| GET | `/usuarios/{usuario_id}/alertas` | Lista alertas de vencimento do usuário. |
+
+---
+
+## Obras — `/obras`
+
+| Método | Rota | Descrição |
+|---------|------|-----------|
+| POST | `/obras` | Cadastra uma obra. |
+| GET | `/obras` | Lista todas as obras. |
+| GET | `/obras/disponiveis` | Lista obras disponíveis. |
+| GET | `/obras/bestsellers` | Lista obras best-sellers. |
+| GET | `/obras/{obra_id}` | Busca obra por ID. |
+| DELETE | `/obras/{obra_id}` | Remove obra. |
+
+---
+
+## Empréstimos — `/emprestimos`
+
+| Método | Rota | Descrição |
+|---------|------|-----------|
+| POST | `/emprestimos` | Realiza empréstimo. |
+| POST | `/emprestimos/{emprestimo_id}/devolucao` | Registra devolução e calcula multa, se houver atraso. |
+| GET | `/emprestimos/usuario/{usuario_id}` | Lista empréstimos de um usuário. |
+| GET | `/emprestimos/{emprestimo_id}` | Busca empréstimo por ID. |
+
+---
+
+## Reservas — `/reservas`
+
+| Método | Rota | Descrição |
+|---------|------|-----------|
+| POST | `/reservas` | Cria uma reserva e posiciona o usuário na fila. |
+| GET | `/reservas/fila/{obra_id}` | Visualiza a fila de reservas de uma obra. |
+| DELETE | `/reservas/{reserva_id}/usuario/{usuario_id}` | Cancela uma reserva. |
+
+---
+
+## Multas — `/multas`
+
+| Método | Rota | Descrição |
+|---------|------|-----------|
+| GET | `/multas` | Lista todas as multas. |
+| GET | `/multas/usuario/{usuario_id}` | Lista multas de um usuário. |
+| PATCH | `/multas/{multa_id}/pagar` | Registra pagamento de multa. |
+
+---
+
+# 🧪 Testes Automatizados
+
+Os testes foram desenvolvidos com **Pytest**.
+
+### Executar todos os testes
+
+```bash
+pytest
+```
+
+### Executar em modo detalhado
+
+```bash
+pytest -v
+```
