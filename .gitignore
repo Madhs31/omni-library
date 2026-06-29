@@ -1,15 +1,10 @@
-# Ambientes Virtuais do Python
 venv/
 env/
-
-# Ficheiros compilados do Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-
-# Ficheiros do Pytest
 .pytest_cache/
-
-# Ficheiros de variáveis de ambiente (se usares no futuro)
 .env
+*.db
+*.sqlite3

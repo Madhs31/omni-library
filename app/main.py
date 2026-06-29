@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from app.database import init_db
 from app.controllers.livro_controller import (
     usuario_router,
     obra_router,
@@ -22,6 +23,12 @@ app = FastAPI(
     ),
     version="1.0.0",
 )
+
+
+@app.on_event("startup")
+def startup():
+    init_db()
+
 
 app.include_router(usuario_router)
 app.include_router(obra_router)

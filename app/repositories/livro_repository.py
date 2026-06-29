@@ -1,14 +1,51 @@
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar, List, Optional, Dict, Any
+from datetime import date, datetime
+from enum import Enum
+from typing import Generic, TypeVar, List, Optional
+
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.models.orm_models import (
+    UsuarioORM,
+    ObraORM,
+    EmprestimoORM,
+    ReservaORM,
+    MultaORM,
+)
 
 T = TypeVar("T")
 
 
-# Interface Base (Repository Pattern)
+def _normalizar_valor(valor):
+    if isinstance(valor, Enum):
+        return valor.value
+    if isinstance(valor, str):
+        try:
+            return datetime.fromisoformat(valor).date()
+        except ValueError:
+            return valor
+    return valor
+
+
+def _normalizar_dados(dados: dict) -> dict:
+    return {chave: _normalizar_valor(valor) for chave, valor in dados.items()}
+
+
+def _serializar(obj) -> Optional[dict]:
+    if obj is None:
+        return None
+
+    dados = {}
+    for coluna in obj.__table__.columns:
+        valor = getattr(obj, coluna.name)
+        if isinstance(valor, date):
+            valor = valor.isoformat()
+        dados[coluna.name] = valor
+    return dados
+
 
 class BaseRepository(ABC, Generic[T]):
-    """Contrato genérico que todo repositório concreto deve implementar."""
-
     @abstractmethod
     def criar(self, dados: dict) -> T: ...
 
@@ -25,223 +62,274 @@ class BaseRepository(ABC, Generic[T]):
     def deletar(self, id: int) -> bool: ...
 
 
-# Repositório de Usuários
-
 class UsuarioRepository(BaseRepository):
-    def __init__(self, db: Dict[str, Any]):
-        self._store = db["usuarios"]
-        self._next_id = db["next_id"]
+    def __init__(self, db: Session):
+        self.db = db
 
     def criar(self, dados: dict) -> dict:
-        id_ = self._next_id("usuario")
-        usuario = {"id": id_, **dados}
-        self._store[id_] = usuario
-        return usuario
+        usuario = UsuarioORM(**_normalizar_dados(dados))
+        self.db.add(usuario)
+        self.db.commit()
+        self.db.refresh(usuario)
+        return _serializar(usuario)
 
     def buscar_por_id(self, id: int) -> Optional[dict]:
-        return self._store.get(id)
+        return _serializar(self.db.get(UsuarioORM, id))
 
     def buscar_por_matricula(self, matricula: str) -> Optional[dict]:
-        return next((u for u in self._store.values() if u["matricula"] == matricula), None)
+        usuario = self.db.scalar(select(UsuarioORM).where(UsuarioORM.matricula == matricula))
+        return _serializar(usuario)
 
     def listar_todos(self) -> List[dict]:
-        return list(self._store.values())
+        return [_serializar(u) for u in self.db.scalars(select(UsuarioORM)).all()]
 
     def atualizar(self, id: int, dados: dict) -> Optional[dict]:
-        if id not in self._store:
+        usuario = self.db.get(UsuarioORM, id)
+        if not usuario:
             return None
-        self._store[id].update(dados)
-        return self._store[id]
+        for chave, valor in _normalizar_dados(dados).items():
+            setattr(usuario, chave, valor)
+        self.db.commit()
+        self.db.refresh(usuario)
+        return _serializar(usuario)
 
     def deletar(self, id: int) -> bool:
-        if id not in self._store:
+        usuario = self.db.get(UsuarioORM, id)
+        if not usuario:
             return False
-        del self._store[id]
+        self.db.delete(usuario)
+        self.db.commit()
         return True
 
 
-# Repositório de Obras
 class ObraRepository(BaseRepository):
-    def __init__(self, db: Dict[str, Any]):
-        self._store = db["obras"]
-        self._next_id = db["next_id"]
+    def __init__(self, db: Session):
+        self.db = db
 
     def criar(self, dados: dict) -> dict:
-        id_ = self._next_id("obra")
-        obra = {"id": id_, **dados}
-        self._store[id_] = obra
-        return obra
+        obra = ObraORM(**_normalizar_dados(dados))
+        self.db.add(obra)
+        self.db.commit()
+        self.db.refresh(obra)
+        return _serializar(obra)
 
     def buscar_por_id(self, id: int) -> Optional[dict]:
-        return self._store.get(id)
+        return _serializar(self.db.get(ObraORM, id))
 
     def listar_todos(self) -> List[dict]:
-        return list(self._store.values())
+        return [_serializar(o) for o in self.db.scalars(select(ObraORM)).all()]
 
     def listar_disponiveis(self) -> List[dict]:
-        return [o for o in self._store.values() if o["quantidade_disponivel"] > 0]
+        obras = self.db.scalars(select(ObraORM).where(ObraORM.quantidade_disponivel > 0)).all()
+        return [_serializar(o) for o in obras]
 
     def listar_bestsellers(self) -> List[dict]:
-        return [o for o in self._store.values() if o.get("eh_bestseller")]
+        obras = self.db.scalars(select(ObraORM).where(ObraORM.eh_bestseller.is_(True))).all()
+        return [_serializar(o) for o in obras]
 
     def atualizar(self, id: int, dados: dict) -> Optional[dict]:
-        if id not in self._store:
+        obra = self.db.get(ObraORM, id)
+        if not obra:
             return None
-        self._store[id].update(dados)
-        return self._store[id]
+        for chave, valor in _normalizar_dados(dados).items():
+            setattr(obra, chave, valor)
+        self.db.commit()
+        self.db.refresh(obra)
+        return _serializar(obra)
 
     def deletar(self, id: int) -> bool:
-        if id not in self._store:
+        obra = self.db.get(ObraORM, id)
+        if not obra:
             return False
-        del self._store[id]
+        self.db.delete(obra)
+        self.db.commit()
         return True
 
     def decrementar_quantidade(self, id: int) -> bool:
-        obra = self._store.get(id)
-        if not obra or obra["quantidade_disponivel"] <= 0:
+        obra = self.db.get(ObraORM, id)
+        if not obra or obra.quantidade_disponivel <= 0:
             return False
-        obra["quantidade_disponivel"] -= 1
+        obra.quantidade_disponivel -= 1
+        self.db.commit()
         return True
 
     def incrementar_quantidade(self, id: int) -> bool:
-        obra = self._store.get(id)
+        obra = self.db.get(ObraORM, id)
         if not obra:
             return False
-        obra["quantidade_disponivel"] += 1
+        obra.quantidade_disponivel += 1
+        self.db.commit()
         return True
 
 
-# Repositório de Empréstimos
 class EmprestimoRepository(BaseRepository):
-    def __init__(self, db: Dict[str, Any]):
-        self._store = db["emprestimos"]
-        self._next_id = db["next_id"]
+    def __init__(self, db: Session):
+        self.db = db
 
     def criar(self, dados: dict) -> dict:
-        id_ = self._next_id("emprestimo")
-        emprestimo = {"id": id_, "data_devolucao": None, "status": "Ativo", **dados}
-        self._store[id_] = emprestimo
-        return emprestimo
+        dados = {"data_devolucao": None, "status": "Ativo", **dados}
+        emprestimo = EmprestimoORM(**_normalizar_dados(dados))
+        self.db.add(emprestimo)
+        self.db.commit()
+        self.db.refresh(emprestimo)
+        return _serializar(emprestimo)
 
     def buscar_por_id(self, id: int) -> Optional[dict]:
-        return self._store.get(id)
+        return _serializar(self.db.get(EmprestimoORM, id))
 
     def listar_todos(self) -> List[dict]:
-        return list(self._store.values())
+        return [_serializar(e) for e in self.db.scalars(select(EmprestimoORM)).all()]
 
     def listar_por_usuario(self, usuario_id: int) -> List[dict]:
-        return [e for e in self._store.values() if e["usuario_id"] == usuario_id]
+        itens = self.db.scalars(select(EmprestimoORM).where(EmprestimoORM.usuario_id == usuario_id)).all()
+        return [_serializar(e) for e in itens]
 
     def listar_ativos_por_usuario(self, usuario_id: int) -> List[dict]:
-        return [
-            e for e in self._store.values()
-            if e["usuario_id"] == usuario_id and e["status"] == "Ativo"
-        ]
+        itens = self.db.scalars(
+            select(EmprestimoORM).where(
+                EmprestimoORM.usuario_id == usuario_id,
+                EmprestimoORM.status == "Ativo",
+            )
+        ).all()
+        return [_serializar(e) for e in itens]
 
     def atualizar(self, id: int, dados: dict) -> Optional[dict]:
-        if id not in self._store:
+        emprestimo = self.db.get(EmprestimoORM, id)
+        if not emprestimo:
             return None
-        self._store[id].update(dados)
-        return self._store[id]
+        for chave, valor in _normalizar_dados(dados).items():
+            setattr(emprestimo, chave, valor)
+        self.db.commit()
+        self.db.refresh(emprestimo)
+        return _serializar(emprestimo)
 
     def deletar(self, id: int) -> bool:
-        if id not in self._store:
+        emprestimo = self.db.get(EmprestimoORM, id)
+        if not emprestimo:
             return False
-        del self._store[id]
+        self.db.delete(emprestimo)
+        self.db.commit()
         return True
 
 
-# Repositório de Reservas
 class ReservaRepository(BaseRepository):
-    def __init__(self, db: Dict[str, Any]):
-        self._store = db["reservas"]
-        self._next_id = db["next_id"]
+    def __init__(self, db: Session):
+        self.db = db
 
     def criar(self, dados: dict) -> dict:
-        id_ = self._next_id("reserva")
-        reserva = {"id": id_, **dados}
-        self._store[id_] = reserva
-        return reserva
+        reserva = ReservaORM(**_normalizar_dados(dados))
+        self.db.add(reserva)
+        self.db.commit()
+        self.db.refresh(reserva)
+        return _serializar(reserva)
 
     def buscar_por_id(self, id: int) -> Optional[dict]:
-        return self._store.get(id)
+        return _serializar(self.db.get(ReservaORM, id))
 
     def listar_todos(self) -> List[dict]:
-        return list(self._store.values())
+        return [_serializar(r) for r in self.db.scalars(select(ReservaORM)).all()]
 
     def listar_fila_por_obra(self, obra_id: int) -> List[dict]:
-        """Retorna a fila de uma obra ordenada por posição (RF02)."""
-        fila = [r for r in self._store.values() if r["obra_id"] == obra_id]
-        return sorted(fila, key=lambda r: r["posicao_fila"])
+        reservas = self.db.scalars(
+            select(ReservaORM)
+            .where(ReservaORM.obra_id == obra_id)
+            .order_by(ReservaORM.posicao_fila)
+        ).all()
+        return [_serializar(r) for r in reservas]
 
     def proxima_posicao_na_fila(self, obra_id: int) -> int:
         fila = self.listar_fila_por_obra(obra_id)
-        return (fila[-1]["posicao_fila"] + 1) if fila else 1
+        return fila[-1]["posicao_fila"] + 1 if fila else 1
 
     def remover_primeiro_da_fila(self, obra_id: int) -> Optional[dict]:
-        fila = self.listar_fila_por_obra(obra_id)
-        if not fila:
+        reserva = self.db.scalar(
+            select(ReservaORM)
+            .where(ReservaORM.obra_id == obra_id)
+            .order_by(ReservaORM.posicao_fila)
+        )
+        if not reserva:
             return None
-        primeiro = fila[0]
-        del self._store[primeiro["id"]]
-        return primeiro
+        dados = _serializar(reserva)
+        self.db.delete(reserva)
+        self.db.commit()
+        return dados
 
     def usuario_ja_reservou(self, usuario_id: int, obra_id: int) -> bool:
-        return any(
-            r["usuario_id"] == usuario_id and r["obra_id"] == obra_id
-            for r in self._store.values()
+        reserva = self.db.scalar(
+            select(ReservaORM).where(
+                ReservaORM.usuario_id == usuario_id,
+                ReservaORM.obra_id == obra_id,
+            )
         )
+        return reserva is not None
 
     def listar_por_usuario(self, usuario_id: int) -> List[dict]:
-        return [r for r in self._store.values() if r["usuario_id"] == usuario_id]
+        reservas = self.db.scalars(select(ReservaORM).where(ReservaORM.usuario_id == usuario_id)).all()
+        return [_serializar(r) for r in reservas]
 
     def atualizar(self, id: int, dados: dict) -> Optional[dict]:
-        if id not in self._store:
+        reserva = self.db.get(ReservaORM, id)
+        if not reserva:
             return None
-        self._store[id].update(dados)
-        return self._store[id]
+        for chave, valor in _normalizar_dados(dados).items():
+            setattr(reserva, chave, valor)
+        self.db.commit()
+        self.db.refresh(reserva)
+        return _serializar(reserva)
 
     def deletar(self, id: int) -> bool:
-        if id not in self._store:
+        reserva = self.db.get(ReservaORM, id)
+        if not reserva:
             return False
-        del self._store[id]
+        self.db.delete(reserva)
+        self.db.commit()
         return True
 
 
-# Repositório de Multas
 class MultaRepository(BaseRepository):
-    def __init__(self, db: Dict[str, Any]):
-        self._store = db["multas"]
-        self._next_id = db["next_id"]
+    def __init__(self, db: Session):
+        self.db = db
 
     def criar(self, dados: dict) -> dict:
-        id_ = self._next_id("multa")
-        multa = {"id": id_, "paga": False, **dados}
-        self._store[id_] = multa
-        return multa
+        dados = {"paga": False, **dados}
+        multa = MultaORM(**_normalizar_dados(dados))
+        self.db.add(multa)
+        self.db.commit()
+        self.db.refresh(multa)
+        return _serializar(multa)
 
     def buscar_por_id(self, id: int) -> Optional[dict]:
-        return self._store.get(id)
+        return _serializar(self.db.get(MultaORM, id))
 
     def listar_todos(self) -> List[dict]:
-        return list(self._store.values())
+        return [_serializar(m) for m in self.db.scalars(select(MultaORM)).all()]
 
     def listar_pendentes_por_usuario(self, usuario_id: int, emprestimos: list) -> List[dict]:
-        """Retorna multas não pagas dos empréstimos do usuário."""
         ids_emp = {e["id"] for e in emprestimos}
-        return [
-            m for m in self._store.values()
-            if m["emprestimo_id"] in ids_emp and not m["paga"]
-        ]
+        if not ids_emp:
+            return []
+        multas = self.db.scalars(
+            select(MultaORM).where(
+                MultaORM.emprestimo_id.in_(ids_emp),
+                MultaORM.paga.is_(False),
+            )
+        ).all()
+        return [_serializar(m) for m in multas]
 
     def atualizar(self, id: int, dados: dict) -> Optional[dict]:
-        if id not in self._store:
+        multa = self.db.get(MultaORM, id)
+        if not multa:
             return None
-        self._store[id].update(dados)
-        return self._store[id]
+        for chave, valor in _normalizar_dados(dados).items():
+            setattr(multa, chave, valor)
+        self.db.commit()
+        self.db.refresh(multa)
+        return _serializar(multa)
 
     def deletar(self, id: int) -> bool:
-        if id not in self._store:
+        multa = self.db.get(MultaORM, id)
+        if not multa:
             return False
-        del self._store[id]
+        self.db.delete(multa)
+        self.db.commit()
         return True

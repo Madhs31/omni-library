@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
-from typing import List
+from sqlalchemy.orm import Session
 
 from app.models.livro_model import (
     UsuarioCreate, ObraCreate,
@@ -16,35 +16,44 @@ from app.repositories.livro_repository import (
 )
 
 
-# Funções de injeção de dependência
-def get_usuario_service() -> UsuarioService:
-    return UsuarioService(UsuarioRepository(get_db()))
+def get_usuario_service(db: Session = Depends(get_db)) -> UsuarioService:
+    return UsuarioService(UsuarioRepository(db))
 
-def get_obra_service() -> ObraService:
-    return ObraService(ObraRepository(get_db()))
 
-def get_emprestimo_service() -> EmprestimoService:
-    db = get_db()
+def get_obra_service(db: Session = Depends(get_db)) -> ObraService:
+    return ObraService(ObraRepository(db))
+
+
+def get_emprestimo_service(db: Session = Depends(get_db)) -> EmprestimoService:
     return EmprestimoService(
-        EmprestimoRepository(db), ObraRepository(db),
-        UsuarioRepository(db), MultaRepository(db), ReservaRepository(db),
+        EmprestimoRepository(db),
+        ObraRepository(db),
+        UsuarioRepository(db),
+        MultaRepository(db),
+        ReservaRepository(db),
     )
 
-def get_reserva_service() -> ReservaService:
-    db = get_db()
+
+def get_reserva_service(db: Session = Depends(get_db)) -> ReservaService:
     return ReservaService(
-        ReservaRepository(db), ObraRepository(db),
-        UsuarioRepository(db), MultaRepository(db), EmprestimoRepository(db),
+        ReservaRepository(db),
+        ObraRepository(db),
+        UsuarioRepository(db),
+        MultaRepository(db),
+        EmprestimoRepository(db),
     )
 
-def get_multa_service() -> MultaService:
-    db = get_db()
-    return MultaService(MultaRepository(db), EmprestimoRepository(db), ObraRepository(db))
 
-def get_alerta_service() -> AlertaService:
-    db = get_db()
+def get_multa_service(db: Session = Depends(get_db)) -> MultaService:
+    return MultaService(
+        MultaRepository(db),
+        EmprestimoRepository(db),
+        ObraRepository(db),
+    )
+
+
+def get_alerta_service(db: Session = Depends(get_db)) -> AlertaService:
     return AlertaService(EmprestimoRepository(db), ObraRepository(db))
-
 
 # Router de Usuários
 usuario_router = APIRouter(prefix="/usuarios", tags=["Usuários"])
