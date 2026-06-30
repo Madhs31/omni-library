@@ -1,6 +1,10 @@
 import pytest
 from datetime import date, timedelta
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from app.db.database import Base
 from app.repositories.livro_repository import (
     UsuarioRepository, ObraRepository,
     EmprestimoRepository, ReservaRepository, MultaRepository,
@@ -15,17 +19,19 @@ from app.services.livro_service import (
 # Fixtures
 @pytest.fixture
 def db():
-    """Banco isolado por teste — sem estado compartilhado entre casos."""
-    counters = {"usuario": 0, "obra": 0, "emprestimo": 0, "reserva": 0, "multa": 0}
-
-    def next_id(entity):
-        counters[entity] += 1
-        return counters[entity]
-
-    return {
-        "usuarios": {}, "obras": {}, "emprestimos": {},
-        "reservas": {}, "multas": {}, "next_id": next_id,
-    }
+    """Banco isolado por teste — SQLite em memória, criado e descartado a cada teste."""
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+    )
+    Base.metadata.create_all(bind=engine)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
+        engine.dispose()
 
 
 @pytest.fixture
