@@ -55,7 +55,7 @@ O sistema foi arquitetado para atender às seguintes regras de negócio primordi
 - **[RNF03]** O projeto deve conter testes unitários e de integração escritos com a biblioteca Pytest, simulando a execução dos comandos no terminal.
 - **[RNF04]** A implementação deve comprovar o uso de no mínimo 1 padrão de projeto (Design Pattern), como o Command Pattern para o mapeamento das ações do terminal.
 
-> 📄 Documentação Oficial: Para visualizar o documento detalhado de planejamento, consulte o arquivo [requisitos_e_diagramas.pdf](./requisitos_e_diagramas.pdf).
+> 📄 Para visualizar o documento detalhado de requisitos, consulte o arquivo [requisitos_e_diagramas.pdf](docs/requisitos_e_diagramas.pdf).
 
 ---
 
