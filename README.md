@@ -1,211 +1,213 @@
-# 📚 OmniLibrary — Sistema de Gestão de Biblioteca
+# 📚 Omni Library — Sistema de Gestão de Biblioteca
 
-API REST desenvolvida em **Python + FastAPI** para modernizar o controle de acervos físicos e digitais de uma biblioteca, com reservas antecipadas, fila de prioridade, cálculo automático de multas e alertas de vencimento.
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.138.0-009688?style=flat-square&logo=fastapi)
+![SQLite](https://img.shields.io/badge/SQLite-Database-003B57?style=flat-square&logo=sqlite)
+![Pytest](https://img.shields.io/badge/Pytest-Testing-E7EAED?style=flat-square&logo=pytest)
 
----
-
-## 👥 Integrantes
-
-- Angelina Borroni
-- Maria Fernanda Diniz
+API REST desenvolvida para modernizar o controle de acervos físicos e digitais de uma biblioteca. O sistema visa resolver problemas clássicos como o sumiço de obras, a falta de rotação adequada de best-sellers e a reeducação do leitor por meio de regras rigorosas de devolução, reservas e controle de multas.
 
 ---
 
-## 🚀 Funcionalidades e Regras de Negócio
+## 👥 Informações do Projeto
 
-| Requisito | Descrição |
-|------------|-----------|
-| **RF01 — Reserva Antecipada** | Usuários podem reservar obras antes de elas ficarem disponíveis, garantindo posição na fila. |
-| **RF02 — Fila de Prioridade** | Na devolução de um exemplar, o próximo usuário da fila é identificado automaticamente. |
-| **RF03 — Multas Automáticas** | Cálculo automático de **R$ 2,50 por dia de atraso** na devolução. |
-| **RF04 — Alertas de Vencimento** | Alertas para empréstimos vencidos ou próximos do vencimento. |
-| **RF05 — Gestão do Acervo** | Cadastro, listagem, busca e remoção de obras do acervo. |
-| **US03 — Bloqueio por Multa** | Usuários com multas pendentes não podem realizar novos empréstimos ou reservas. |
+- **Nome do Projeto:** Omni Library
+- **Integrantes:** Angelina Borroni; Maria Fernanda Diniz
+- **Solicitante:** Prof. Juan Hassem
+
+---
+
+## 🎯 Visão Geral e Regras de Negócios
+
+O sistema foi arquitetado para atender às seguintes regras de negócio primordiais:
+
+1. **Reserva antecipada e fila de prioridade:** Lógica otimizada para a reserva de exemplares altamente disputados, organizando os usuários em filas prioritárias.
+2. **Cálculo automatizado de multas:** Sistema que calcula dinamicamente o valor das multas acumuladas por dia de atraso na devolução de obras.
+3. **Notificações inteligentes:** Disparo de alertas automáticos e notificações sobre o vencimento próximo ou definitivo dos prazos de empréstimo.
+
+---
+
+## 👤 User Stories
+
+| ID | Descrição |
+|:---|:---|
+| **US01** | Como Leitor, quero digitar um comando de busca e reserva no terminal, para que eu garanta meu lugar na fila de um best-seller. |
+| **US02** | Como Bibliotecário, quero executar um script de devolução passando o ID da obra, para que o sistema libere o livro para o próximo da fila de prioridade automaticamente. |
+| **US03** | Como Administrador, quero que o terminal bloqueie novos empréstimos caso o leitor tenha multas ativas por atraso, a fim da reeducação em relação à devolução dos livros. |
+| **US04** | Como Leitor, eu quero ver um alerta de devolução iminente impresso na tela ao consultar meu perfil no sistema, para que eu evite cobranças adicionais. |
+
+---
+
+## 📋 Requisitos do Sistema
+
+### Requisitos Funcionais
+
+- **[RF01] Reserva Antecipada via CLI:** O sistema deve permitir que usuários executem um comando no terminal para reservar obras físicas ou digitais.
+- **[RF02] Fila de Prioridade Interna:** O sistema deve organizar automaticamente uma fila de prioridade estruturada em memória ou banco de dados para best-sellers, avançando a fila conforme devoluções são registradas no terminal.
+- **[RF03] Cálculo de Multas Dinâmico:** Ao registrar a devolução de um livro via comando, o sistema deve calcular e exibir imediatamente no console o valor da multa com base nos dias de atraso.
+- **[RF04] Alertas de Vencimento (Console):** O sistema deve exibir alertas e notificações de prazos vencidos ou próximos do vencimento assim que o leitor consultar seu status ou fizer login no terminal.
+- **[RF05] Gestão de Acervo por Comandos:** O sistema deve prover comandos específicos para o bibliotecário adicionar, remover ou listar o inventário de obras e suas disponibilidades.
+
+### Requisitos Não Funcionais
+
+- **[RNF01]** A aplicação deve ser construída inteiramente em Python e executada via Interface de Linha de Comando (CLI).
+- **[RNF02]** A arquitetura deve manter a separação em camadas limpas, substituindo a camada de Controller (rotas) por uma camada de CLI/Apresentação, interagindo com Service, Repository e Model.
+- **[RNF03]** O projeto deve conter testes unitários e de integração escritos com a biblioteca Pytest, simulando a execução dos comandos no terminal.
+- **[RNF04]** A implementação deve comprovar o uso de no mínimo 1 padrão de projeto (Design Pattern), como o Command Pattern para o mapeamento das ações do terminal.
+
+> 📄 Documentação Oficial: Para visualizar o documento detalhado de planejamento, consulte o arquivo [requisitos_e_diagramas.pdf](./requisitos_e_diagramas.pdf).
+
+---
+
+## 📊 Diagramas
+
+### Diagrama de Casos de Uso
+
+
+```mermaid
+flowchart LR
+    %% Atores
+    Leitor((Leitor))
+    Bibliotecario((Bibliotecário))
+
+    %% Sistema
+    subgraph CLI ["CLI - Gestão de Biblioteca"]
+        direction TB
+        UC1([Executar Comando de Pesquisa])
+        UC2([Executar Comando de Reserva])
+        UC3([Consultar Status e Multas])
+        UC4([Cadastrar Nova Obra])
+        UC5([Registrar Empréstimo])
+        UC6([Registrar Devolução - Calcula Multa/Fila])
+    end
+
+    %% Relacionamentos do Leitor
+    Leitor --> UC1
+    Leitor --> UC2
+    Leitor --> UC3
+
+    %% Relacionamentos do Bibliotecário
+    Bibliotecario --> UC1
+    Bibliotecario --> UC3
+    Bibliotecario --> UC4
+    Bibliotecario --> UC5
+    Bibliotecario --> UC6
+
+```
+
+### Diagrama de Classes
+
+```mermaid
+classDiagram
+    class Usuario {
+        +UUID id
+        +String nome
+        +String matricula
+        +Boolean is_bibliotecario
+    }
+
+    class Obra {
+        +UUID id
+        +String titulo
+        +Enum tipo_acervo
+        +Integer qtd_disponivel
+        +Boolean eh_bestseller
+    }
+
+    class Emprestimo {
+        +UUID id
+        +Date data_emprestimo
+        +Date data_vencimento
+        +Date data_devolucao
+        +Enum status
+    }
+
+    class Reserva {
+        +UUID id
+        +DateTime data_solicitacao
+        +Integer posicao_fila
+    }
+
+    class Multa {
+        +UUID id
+        +Integer dias_atraso
+        +Decimal valor_total
+        +Boolean paga
+    }
+
+    Usuario "1" --> "0..*" Emprestimo : realiza via comando
+    Usuario "1" --> "0..*" Reserva : entra na fila
+    Obra "1" --> "0..*" Emprestimo : vinculada a
+    Obra "1" --> "0..*" Reserva : gerencia prioridade
+    Emprestimo "1" --> "0..1" Multa : calcula atraso
+
+```
 
 ---
 
 ## 🧱 Tecnologias Utilizadas
 
-- **Linguagem:** Python
-- **Framework REST:** FastAPI
-- **Validação de dados:** Pydantic
-- **Banco de dados:** SQLite
-- **ORM:** SQLAlchemy
-- **Design Pattern:** Repository Pattern
-- **Testes:** Pytest
+* **Linguagem:** Python 3.10+
+* **Framework REST:** FastAPI
+* **Validação de Dados:** Pydantic v2
+* **Banco de Dados:** SQLite (Desenvolvimento local)
+* **ORM:** SQLAlchemy
+* **Testes:** Pytest
 
 ---
 
-# 📐 Arquitetura do Sistema
+## 📐 Arquitetura e Design Patterns
 
-O projeto segue uma arquitetura em camadas, separando responsabilidades entre rotas, regras de negócio, persistência e modelos de dados.
+O projeto segue uma rigorosa arquitetura em camadas (Layered Architecture), facilitando a manutenção, testes e evolução contínua da API.
 
-```txt
+```text
 Cliente HTTP
     │
     ▼
-Controllers
+Controllers  (Rotas HTTP da API)
     │
     ▼
-Services
+Services     (Cálculo de multa, validações, bloqueios)
     │
     ▼
-Repositories
+Repositories (Acesso ao Banco de Dados)
     │
     ▼
 SQLite + SQLAlchemy
+
 ```
 
-### Camadas da aplicação
-
-- **Controllers:** definem as rotas HTTP da API.
-- **Services:** concentram as regras de negócio, como cálculo de multa, validação de reservas e bloqueio por multa.
-- **Repositories:** fazem o acesso ao banco de dados usando SQLAlchemy.
-- **Models:** armazenam os schemas Pydantic e os modelos ORM.
-- **Database:** configura a conexão com o SQLite.
+* **Repository Pattern:** Separa a lógica de negócio do acesso a dados. Os serviços interagem com os repositórios, nunca com o banco diretamente.
+* **Dependency Injection:** Utilização do `Depends()` do FastAPI para injetar dependências nas rotas (como instâncias de banco e serviços).
 
 ---
 
-# 🧩 Design Patterns
+## 🗃️ Banco de Dados
 
-## Repository Pattern
+O banco de dados é gerado automaticamente ao iniciar a aplicação (`omnilibrary.db`). Abaixo estão as tabelas principais:
 
-O projeto utiliza o Repository Pattern para separar a lógica de negócio da lógica de acesso ao banco de dados. Dessa forma, os serviços não acessam diretamente o SQLite, mas sim os repositórios.
-
-## Dependency Injection
-
-O FastAPI utiliza `Depends()` para injetar dependências, como a sessão do banco e os serviços usados pelas rotas.
-
-## Layered Architecture
-
-A aplicação é dividida em camadas, facilitando manutenção, testes e evolução do projeto.
+* **usuarios:** `id`, `nome`, `matricula`, `is_bibliotecario`
+* **obras:** `id`, `titulo`, `tipo_acervo`, `quantidade_disponivel`, `eh_bestseller`
+* **emprestimos:** `id`, `usuario_id`, `obra_id`, `data_emprestimo`, `data_vencimento`, `data_devolucao`, `status`
+* **reservas:** `id`, `usuario_id`, `obra_id`, `data_solicitacao`, `posicao_fila`
+* **multas:** `id`, `emprestimo_id`, `dias_atraso`, `valor_total`, `paga`
 
 ---
 
-# 🗂️ Estrutura de Pastas
+## 🛠️ Como Executar o Projeto
 
-```txt
-OmniLibrary/
-│
-├── app/
-│   ├── __init__.py
-│   ├── main.py                 # Ponto de entrada da API FastAPI
-│   ├── database.py             # Reexporta configurações do banco
-│   │
-│   ├── db/
-│   │   ├── __init__.py
-│   │   └── database.py         # Conexão SQLite, SessionLocal, Base e init_db
-│   │
-│   ├── controllers/
-│   │   ├── __init__.py
-│   │   └── livro_controller.py # Rotas da API
-│   │
-│   ├── services/
-│   │   ├── __init__.py
-│   │   └── livro_service.py    # Regras de negócio
-│   │
-│   ├── repositories/
-│   │   ├── __init__.py
-│   │   └── livro_repository.py # Acesso ao banco de dados
-│   │
-│   └── models/
-│       ├── __init__.py
-│       ├── livro_model.py      # Schemas Pydantic
-│       └── orm_models.py       # Modelos SQLAlchemy
-│
-├── docs/
-│   ├── casos_de_uso.puml
-│   └── classes.puml
-│
-├── tests/
-│   ├── __init__.py
-│   └── test_livros.py
-│
-├── .gitignore
-├── README.md
-└── requirements.txt
-```
+### Pré-requisitos
 
----
-
-# 🗃️ Banco de Dados
-
-O projeto utiliza **SQLite** no desenvolvimento local. O banco é criado automaticamente ao iniciar a aplicação.
-
-### Arquivo gerado localmente
-
-```text
-omnilibrary.db
-```
-
-Esse arquivo não deve ser enviado para o GitHub, por isso deve estar listado no `.gitignore`.
-
-### Tabelas principais
-
-#### usuarios
-
-```text
-id
-nome
-matricula
-is_bibliotecario
-```
-
-#### obras
-
-```text
-id
-titulo
-tipo_acervo
-quantidade_disponivel
-eh_bestseller
-```
-
-#### emprestimos
-
-```text
-id
-usuario_id
-obra_id
-data_emprestimo
-data_vencimento
-data_devolucao
-status
-```
-
-#### reservas
-
-```text
-id
-usuario_id
-obra_id
-data_solicitacao
-posicao_fila
-```
-
-#### multas
-
-```text
-id
-emprestimo_id
-dias_atraso
-valor_total
-paga
-```
-
----
-
-# 🛠️ Como Executar o Projeto
-
-## Pré-requisitos
-
-- Python 3.10 ou superior
-- Git
+* Python 3.10 ou superior
+* Git
 
 ### 1. Clonar o repositório
 
 ```bash
-git clone https://github.com/Madhs31/omni-library.git
+git clone [https://github.com/Madhs31/omni-library.git](https://github.com/Madhs31/omni-library.git)
+cd omni-library
+```
+```bash
 cd omni-library
 ```
 
@@ -215,6 +217,8 @@ cd omni-library
 
 ```bash
 python -m venv venv
+```
+```bash
 .\venv\Scripts\activate
 ```
 
@@ -222,6 +226,8 @@ python -m venv venv
 
 ```bash
 python -m venv venv
+```
+```bash
 source venv/bin/activate
 ```
 
@@ -237,92 +243,33 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-A API ficará disponível em:
-
-```text
-http://127.0.0.1:8000
-```
+A API ficará disponível em: `http://127.0.0.1:8000`
 
 ---
 
-# 📖 Documentação da API
+## 📖 Documentação da API e Endpoints
 
-Após iniciar o servidor, acesse:
+Após iniciar o servidor, acesse a documentação interativa gerada automaticamente:
 
-- **Swagger UI:** http://127.0.0.1:8000/docs
-- **ReDoc:** http://127.0.0.1:8000/redoc
+* **Swagger UI:** `http://127.0.0.1:8000/docs`
+* **ReDoc:** `http://127.0.0.1:8000/redoc`
 
----
+### Resumo dos Endpoints
 
-# 🔗 Endpoints Disponíveis
-
-## Usuários — `/usuarios`
-
-| Método | Rota | Descrição |
-|---------|------|-----------|
-| POST | `/usuarios` | Cria um usuário. |
-| GET | `/usuarios` | Lista todos os usuários. |
-| GET | `/usuarios/{usuario_id}` | Busca usuário por ID. |
-| DELETE | `/usuarios/{usuario_id}` | Remove usuário. |
-| GET | `/usuarios/{usuario_id}/alertas` | Lista alertas de vencimento do usuário. |
+| Recurso | Descrição |
+| --- | --- |
+| **`/usuarios`** | Cadastro, listagem, remoção e verificação de alertas de usuários. |
+| **`/obras`** | Gestão do acervo, listagem de best-sellers e livros disponíveis. |
+| **`/emprestimos`** | Realização de empréstimos, devoluções (com cálculo de multa) e consultas. |
+| **`/reservas`** | Criação de reservas (fila de prioridade) e visualização de filas. |
+| **`/multas`** | Consulta de multas pendentes e pagamentos. |
 
 ---
 
-## Obras — `/obras`
+## 🧪 Testes Automatizados
 
-| Método | Rota | Descrição |
-|---------|------|-----------|
-| POST | `/obras` | Cadastra uma obra. |
-| GET | `/obras` | Lista todas as obras. |
-| GET | `/obras/disponiveis` | Lista obras disponíveis. |
-| GET | `/obras/bestsellers` | Lista obras best-sellers. |
-| GET | `/obras/{obra_id}` | Busca obra por ID. |
-| DELETE | `/obras/{obra_id}` | Remove obra. |
-
----
-
-## Empréstimos — `/emprestimos`
-
-| Método | Rota | Descrição |
-|---------|------|-----------|
-| POST | `/emprestimos` | Realiza empréstimo. |
-| POST | `/emprestimos/{emprestimo_id}/devolucao` | Registra devolução e calcula multa, se houver atraso. |
-| GET | `/emprestimos/usuario/{usuario_id}` | Lista empréstimos de um usuário. |
-| GET | `/emprestimos/{emprestimo_id}` | Busca empréstimo por ID. |
-
----
-
-## Reservas — `/reservas`
-
-| Método | Rota | Descrição |
-|---------|------|-----------|
-| POST | `/reservas` | Cria uma reserva e posiciona o usuário na fila. |
-| GET | `/reservas/fila/{obra_id}` | Visualiza a fila de reservas de uma obra. |
-| DELETE | `/reservas/{reserva_id}/usuario/{usuario_id}` | Cancela uma reserva. |
-
----
-
-## Multas — `/multas`
-
-| Método | Rota | Descrição |
-|---------|------|-----------|
-| GET | `/multas` | Lista todas as multas. |
-| GET | `/multas/usuario/{usuario_id}` | Lista multas de um usuário. |
-| PATCH | `/multas/{multa_id}/pagar` | Registra pagamento de multa. |
-
----
-
-# 🧪 Testes Automatizados
-
-Os testes foram desenvolvidos com **Pytest**.
-
-### Executar todos os testes
-
-```bash
-pytest
-```
-
-### Executar em modo detalhado
+O projeto possui cobertura de testes garantida pela biblioteca **Pytest**.
+Para executar a suíte de testes:
 
 ```bash
 pytest -v
